@@ -154,7 +154,6 @@ import Loading from "@/components/loading/index.vue";
 import {Icon} from "@iconify/vue";
 import {computed, onActivated, reactive, ref, watch} from "vue";
 import {onBeforeRouteLeave} from "vue-router";
-import {ElMessage, ElMessageBox} from "element-plus";
 import {useEmailStore} from "@/store/email.js";
 import {useUiStore} from "@/store/ui.js";
 import {useSettingStore} from "@/store/setting.js";

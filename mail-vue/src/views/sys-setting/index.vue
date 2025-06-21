@@ -213,7 +213,7 @@
           <div class="card-content">
             <div class="concerning-item">
               <span>版本:</span>
-              <span>v1.1.0</span>
+              <span>v1.2.0</span>
             </div>
             <div class="concerning-item">
               <span>交流:</span>
@@ -299,7 +299,6 @@
 <script setup>
 import {defineOptions, onMounted, reactive, ref} from "vue";
 import {physicsDeleteAll, setBackground, settingQuery, settingSet} from "@/request/setting.js";
-import {ElMessage, ElMessageBox} from "element-plus";
 import {useSettingStore} from "@/store/setting.js";
 import {useUserStore} from "@/store/user.js";
 import {useAccountStore} from "@/store/account.js";
@@ -498,8 +497,6 @@ function jump(href) {
   doc.click()
 }
 
-
-
 function editSetting(settingForm, refreshStatus = true) {
   if (settingLoading.value) return
   settingLoading.value = true
@@ -533,6 +530,7 @@ function editSetting(settingForm, refreshStatus = true) {
 .settings-container {
   height: 100%;
   overflow: hidden;
+  background: #FAFCFF;
 }
 
 .scroll {
@@ -573,18 +571,17 @@ function editSetting(settingForm, refreshStatus = true) {
 
 .settings-card {
   background-color: #fff;
-  border-radius: 4px;
-  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color);
   transition: all 300ms;
-  box-shadow: var(--el-box-shadow-light);
   overflow: hidden;
 }
 
 .card-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: bold;
   padding: 10px 20px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid var(--el-border-color);
 }
 
 .card-content {

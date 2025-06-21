@@ -65,7 +65,8 @@ const premKey = {
 	'sys-email:delete': ['/sys-email/delete'],
 	'setting:query': [],
 	'setting:set': ['/setting/set', '/setting/setBackground'],
-	'setting:clean': ['/setting/physicsDeleteAll']
+	'setting:clean': ['/setting/physicsDeleteAll'],
+	'analysis:query': ['/analysis/echarts']
 };
 
 app.use('*', async (c, next) => {
@@ -90,6 +91,7 @@ app.use('*', async (c, next) => {
 	const result = await jwtUtils.verifyToken(c, jwt);
 
 	if (!result) {
+		console.error(401,1)
 		throw new BizError('身份认证失效,请重新登录', 401);
 	}
 
@@ -97,10 +99,12 @@ app.use('*', async (c, next) => {
 	const authInfo = await c.env.kv.get(KvConst.AUTH_INFO + userId, { type: 'json' });
 
 	if (!authInfo) {
+		console.error(401,2)
 		throw new BizError('身份认证失效,请重新登录', 401);
 	}
 
 	if (!authInfo.tokens.includes(token)) {
+		console.error(401,3)
 		throw new BizError('身份认证失效,请重新登录', 401);
 	}
 

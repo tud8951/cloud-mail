@@ -6,15 +6,16 @@
 </template>
 
 <script setup>
-import {ref, onMounted, onBeforeUnmount, watch} from 'vue';
+import {ref, onMounted, onBeforeUnmount, watch, nextTick} from 'vue';
 import loading from "@/components/loading/index.vue";
 import {compressImage} from "@/utils/file-utils.js";
 defineExpose({
-  clearEditor
+  clearEditor,
+  focus
 })
 
 const props = defineProps({
-  modelValue: {
+  defValue: {
     type: String,
     default: ''
   },
@@ -39,7 +40,7 @@ onBeforeUnmount(() => {
   destroyEditor();
 });
 
-watch(() => props.modelValue, (newValue) => {
+watch(() => props.defValue, (newValue) => {
   if (editor.value && editor.value.getContent() !== newValue) {
     editor.value.setContent(newValue);
   }
@@ -69,23 +70,54 @@ function initEditor() {
     selector: `#${props.editorId}`,
     statusbar: false,
     height: "100%",
+    auto_focus: true,
+    forced_root_block: 'div',
     plugins: 'link image advlist lists  emoticons fullscreen  table preview code',
-    toolbar: 'bold emoticons forecolor fontsize | alignleft aligncenter alignright alignjustify | outdent indent |  bullist numlist | link image  | table code preview fullscreen',
+    toolbar: 'bold emoticons forecolor backcolor italic fontsize | alignleft aligncenter alignright alignjustify | outdent indent |  bullist numlist | link image  | table code preview fullscreen',
     toolbar_mode: 'scrolling',
     mobile: {
-      toolbar: 'fullscreen bold emoticons forecolor fontsize | alignleft aligncenter alignright alignjustify | outdent indent |  bullist numlist | link image  | table code preview ',
+      toolbar: 'fullscreen bold emoticons forecolor backcolor italic fontsize | alignleft aligncenter alignright alignjustify | outdent indent |  bullist numlist | link image  | table code preview ',
+
     },
-    font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt',
+    font_size_formats: '8px 10px 12px 14px 16px 18px 24px 36px',
     emoticons_search: false,
     language: 'zh_CN',
     language_url: '/tinymce/langs/zh_CN.js',
     menubar: false,
     license_key: 'gpl',
-    content_style: " .tox-dialog__body-content  { margin: 0 !important; } img { max-width: 100%; height: auto; }",
+    content_style: ` .tox-dialog__body-content  { margin: 0 !important; }
+    img { max-width: 100%; height: auto; }
+    body {margin: 10px 8px 0 5px !important; font-family: 'HarmonyOS'; font-size: 14px;}
+    @media (pointer: fine) and (hover: hover) {
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+    }
+    table, th, td {
+      border: none !important;
+    }
+    a {
+        color: #409EFF !important;
+    }
+    `,
     setup: (ed) => {
       editor.value = ed;
       ed.on('init', () => {
-        ed.setContent(props.modelValue);
+        ed.setContent(props.defValue);
         isInitialized.value = true;
       });
       ed.on('input change', () => {
@@ -94,6 +126,7 @@ function initEditor() {
         emit('change', content, text);
       });
     },
+    autofocus: true,
     branding: false,
     file_picker_types: 'image',
     image_dimensions: false,
@@ -108,7 +141,6 @@ function initEditor() {
       input.addEventListener('change', async (e) => {
         let file = e.target.files[0];
         file = await compressImage(file);
-        console.log(file.size / 1024)
         const reader = new FileReader();
         reader.onload = () => {
           const id = 'blobid' + (new Date()).getTime();
@@ -125,6 +157,12 @@ function initEditor() {
       input.click();
     }
   });
+}
+
+function focus() {
+  nextTick(() => {
+    editor.value.focus()
+  })
 }
 
 
@@ -161,6 +199,11 @@ function destroyEditor() {
   padding-left: 15px;
   padding-bottom: 15px;
   background: #FFFFFF;
+  @media (max-width: 767px) {
+    padding-right: 10px;
+    padding-left: 10px;
+    padding-bottom: 10px;
+  }
 }
 
 :deep(.tox-tinymce) {
@@ -175,6 +218,10 @@ function destroyEditor() {
 
 :deep(.tox-tbtn) {
   margin: 0 !important;
+}
+
+:deep(.tox .tox-edit-area::before) {
+  display: none;
 }
 
 </style>

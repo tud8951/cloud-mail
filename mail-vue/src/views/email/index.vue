@@ -64,6 +64,7 @@ function jumpContent(email) {
   emailStore.contentData.email = email
   emailStore.contentData.delType = 'logic'
   emailStore.contentData.showStar = true
+  emailStore.contentData.showReply = true
   router.push('/content')
 }
 

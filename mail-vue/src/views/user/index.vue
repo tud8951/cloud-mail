@@ -233,7 +233,6 @@ import {
 } from '@/request/user.js'
 import {roleSelectUse} from "@/request/role.js";
 import {Icon} from "@iconify/vue";
-import {ElMessage, ElMessageBox, ElRadio, ElRadioGroup} from "element-plus";
 import loading from "@/components/loading/index.vue";
 import {tzDayjs} from "@/utils/day.js";
 import {useSettingStore} from "@/store/setting.js";
@@ -841,11 +840,12 @@ function adjustWidth() {
 }
 
 .details {
-  padding: 20px;
+  padding: 15px 15px 15px 52px;
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-
+  @media (max-width: 767px) {
+    padding-left: 35px;
+  }
   .details-item-title {
     white-space: pre;
     color: #909399;

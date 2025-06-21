@@ -96,7 +96,6 @@
 import {Icon} from "@iconify/vue";
 import {defineOptions, nextTick, reactive, ref} from "vue";
 import {roleAdd, roleDelete, rolePermTree, roleRoleList, roleSet, roleSetDef} from "@/request/role.js";
-import {ElMessage, ElMessageBox} from "element-plus";
 import loading from '@/components/loading/index.vue';
 import {useRoleStore} from "@/store/role.js";
 import {useUserStore} from "@/store/user.js";

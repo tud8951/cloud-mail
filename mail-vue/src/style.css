@@ -65,23 +65,28 @@ button, input, select, textarea {
 }
 
 .tox .tox-dialog--width-lg {
-    @media (min-width: 1024px) {
-        height: 850px !important;
+    height: 850px !important;
+    @media (max-width: 1024px) {
+        height: calc(100% - 40px) !important;
     }
 }
 
 .tox .tox-dialog__body-content {
     max-height: min(850px, calc(100vh - 110px)) !important;
-    @media (min-width: 1024px) {
-        max-height: min(850px, calc(100vh - 110px));
+    @media (max-width: 1024px) {
+        max-height: min(850px, calc(100% - 40px)) !important;
     }
 }
 
 .tox .tox-dialog__body-content {
-    @media (min-width: 1024px) {
-        max-height: min(850px, calc(100vh - 110px)) !important;
+    overflow: initial !important;
+    max-height: min(850px, calc(100vh - 110px)) !important;
+    @media (max-width: 1024px) {
+        box-sizing: initial !important;
+        max-height: min(850px, calc(100% - 40px)) !important;
     }
 }
+
 
 
 :root {

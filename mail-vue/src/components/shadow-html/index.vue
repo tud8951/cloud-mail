@@ -47,13 +47,11 @@ function updateContent() {
     <style>
       :host {
         all: initial;
-        display: block;
         width: 100%;
         height: 100%;
         font-family: 'HarmonyOS', -apple-system, BlinkMacSystemFont,
                     'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         font-size: 14px;
-        line-height: 1.5;
         color: #13181D;
         overflow-wrap: break-word;
       }
@@ -68,10 +66,9 @@ function updateContent() {
       img {
         max-width: 100%;
         height: auto !important;
-        display: block;
       }
 
-      * {
+      *:not(p) {
         margin: 0;
         padding: 0;
         box-sizing: border-box;

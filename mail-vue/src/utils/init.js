@@ -6,10 +6,9 @@ import { permsToRouter } from "@/utils/perm.js";
 import router from "@/router";
 import { settingQuery } from "@/request/setting.js";
 import {cvtR2Url} from "@/utils/convert.js";
-import {ElMessage} from "element-plus";
 
 export async function init() {
-    document.title = '-'
+    document.title = 'loading...'
 
     const settingStore = useSettingStore();
     const userStore = useUserStore();

@@ -3,10 +3,11 @@
     <div class="header-actions">
       <Icon class="icon" icon="material-symbols-light:arrow-back-ios-new" width="20" height="20" @click="handleBack"/>
       <Icon v-perm="'email:delete'" class="icon" icon="uiw:delete" width="16" height="16" @click="handleDelete"/>
-      <template v-if="emailStore.contentData.showStar">
-        <Icon class="icon" @click="changeStar" v-if="email.isStar" icon="fluent-color:star-16" width="20" height="20"/>
-        <Icon class="icon" @click="changeStar" v-else icon="solar:star-line-duotone" width="18" height="18"/>
-      </template>
+      <span class="star" v-if="emailStore.contentData.showStar">
+        <Icon class="icon" @click="changeStar" v-if="email.isStar" icon="fluent-color:star-16" width="21" height="20"/>
+        <Icon class="icon" @click="changeStar" v-else icon="solar:star-line-duotone" width="19" height="19"/>
+      </span>
+      <Icon class="icon" v-if="emailStore.contentData.showReply"  @click="openReply" icon="carbon:reply" width="20" height="20" />
     </div>
     <div></div>
     <el-scrollbar class="scrollbar">
@@ -23,12 +24,11 @@
                   <span><{{ email.sendEmail }}></span>
                 </div>
               </div>
-              <div class="receive"><span class="source">收件人</span><span>{{ email.receiveEmail }}</span></div>
+              <div class="receive"><span class="source">收件人</span><span class="receive-email">{{  formateReceive(email.recipient) }}</span></div>
               <div class="date">
                 <div>{{ formatDetailDate(email.createTime) }}</div>
               </div>
             </div>
-
             <el-alert v-if="email.status === 3" :closable="false" :title="'发送失败: ' + toMessage(email.message)" class="email-msg" type="error" show-icon />
             <el-alert v-if="email.status === 4" :closable="false" title="被标记为垃圾邮件" class="email-msg" type="warning" show-icon />
             <el-alert v-if="email.status === 5" :closable="false" title="邮件发送被延迟" class="email-msg" type="warning" show-icon />
@@ -87,7 +87,9 @@ import {cvtR2Url} from "@/utils/convert.js";
 import {getIconByName} from "@/utils/icon-utils.js";
 import {useSettingStore} from "@/store/setting.js";
 import {sysEmailDelete} from "@/request/sys-email.js";
+import {useUiStore} from "@/store/ui.js";
 
+const uiStore = useUiStore();
 const settingStore = useSettingStore();
 const accountStore = useAccountStore();
 const emailStore = useEmailStore();
@@ -96,9 +98,14 @@ const email = emailStore.contentData.email
 const showPreview = ref(false)
 const srcList = reactive([])
 
+
 watch(() => accountStore.currentAccountId, () => {
   handleBack()
 })
+
+function openReply() {
+  uiStore.writerRef.openReply(email)
+}
 
 function toMessage(message) {
   return  message ? JSON.parse(message).message : '';
@@ -119,10 +126,13 @@ function showImage(key) {
 }
 
 function isImage(filename) {
-  return ['png', 'jpg', 'jpeg', 'bmp', 'gif'].includes(getExtName(filename))
+  return ['png', 'jpg', 'jpeg', 'bmp', 'gif','jfif'].includes(getExtName(filename))
 }
 
-
+function formateReceive(recipient) {
+  recipient = JSON.parse(recipient)
+  return recipient.map(item => item.address).join(', ')
+}
 
 function changeStar() {
   if (email.isStar) {
@@ -194,7 +204,11 @@ const handleDelete = () => {
   gap: 20px;
   box-shadow: inset 0 -1px 0 0 rgba(100, 121, 143, 0.12);
   font-size: 18px;
-
+  .star {
+    display: flex;
+    align-items: center;
+    min-width: 21px;
+  }
   .icon {
     cursor: pointer;
   }
@@ -232,8 +246,7 @@ const handleDelete = () => {
     .att {
       margin-top: 30px;
       margin-bottom: 30px;
-      border: 1px solid #e4e7ed;
-      box-shadow: var(--el-box-shadow-light);
+      border: 1px solid var(--el-border-color);
       padding: 10px;
       border-radius: 4px;
       width: fit-content;
@@ -336,7 +349,11 @@ const handleDelete = () => {
 
       .receive {
         margin-bottom: 6px;
-
+        display: flex;
+        .receive-email {
+          max-width: 700px;
+          word-break: break-word;
+        }
         span:nth-child(2) {
           color: #585d69;
         }

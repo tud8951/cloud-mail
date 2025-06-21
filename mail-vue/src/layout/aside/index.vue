@@ -26,9 +26,14 @@
           <Icon icon="fluent:settings-48-regular" width="20" height="20" />
           <span class="menu-name" style="margin-left: 20px">个人设置</span>
         </el-menu-item>
-        <div class="manage-title" v-perm="['user:query','role:query','setting:query']">
+        <div class="manage-title" v-perm="['user:query','role:query','setting:query','analysis:query']">
           <div>管理</div>
         </div>
+        <el-menu-item @click="router.push({name: 'analysis'})" index="analysis" v-perm="'analysis:query'"
+                      :class="route.meta.name === 'analysis' ? 'choose-item' : ''">
+          <Icon icon="fluent:data-pie-20-regular" width="24" height="24" />
+          <span class="menu-name" style="margin-left: 16px">分析页</span>
+        </el-menu-item>
         <el-menu-item @click="router.push({name: 'user'})" index="setting" v-perm="'user:query'"
                       :class="route.meta.name === 'user' ? 'choose-item' : ''">
           <Icon icon="iconoir:user" width="24" height="24" />
@@ -70,7 +75,7 @@ const route = useRoute();
 .title {
   margin: 15px 10px;
   height: 45px;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   position: relative;
   font-size: 16px;

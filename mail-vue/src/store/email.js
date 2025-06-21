@@ -8,7 +8,8 @@ export const useEmailStore = defineStore('email', {
         contentData: {
             email: null,
             delType: null,
-            showStar: true
+            showStar: true,
+            showReply: true,
         },
         sendScroll: null,
     }),

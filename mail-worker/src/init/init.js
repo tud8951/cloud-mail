@@ -1,6 +1,6 @@
-import settingService from './setting-service';
-
-const initService = {
+import settingService from '../service/setting-service';
+import emailUtils from '../utils/email-utils';
+const init = {
 	async init(c) {
 
 		const secret = c.req.param('secret');
@@ -10,12 +10,53 @@ const initService = {
 		}
 
 		await this.intDB(c);
-		await this.v1DB(c);
+		await this.v1_1DB(c);
+		await this.v1_2DB(c);
 		await settingService.refresh(c);
 		return c.text('初始化成功');
 	},
 
-	async v1DB(c) {
+	async v1_2DB(c){
+
+		const ADD_COLUMN_SQL_LIST = [
+			`ALTER TABLE email ADD COLUMN recipient TEXT NOT NULL DEFAULT '[]';`,
+			`ALTER TABLE email ADD COLUMN cc TEXT NOT NULL DEFAULT '[]';`,
+			`ALTER TABLE email ADD COLUMN bcc TEXT NOT NULL DEFAULT '[]';`,
+			`ALTER TABLE email ADD COLUMN message_id TEXT NOT NULL DEFAULT '';`,
+			`ALTER TABLE email ADD COLUMN in_reply_to TEXT NOT NULL DEFAULT '';`,
+			`ALTER TABLE email ADD COLUMN relation TEXT NOT NULL DEFAULT '';`
+		];
+
+		for (let sql of ADD_COLUMN_SQL_LIST) {
+			try {
+				await c.env.db.prepare(sql).run();
+			} catch (e) {
+				console.warn(`跳过字段添加，原因：${e.message}`);
+			}
+		}
+
+		await this.receiveEmailToRecipient(c);
+		await this.initAccountName(c);
+
+		try {
+			await c.env.db.prepare(`
+        INSERT INTO perm (perm_id, name, perm_key, pid, type, sort) VALUES
+        (31,'分析页', NULL, 0, 1, 2.1),
+        (32,'数据查看', 'analysis:query', 31, 2, 1)`).run();
+		} catch (e) {
+			console.warn(`跳过数据，原因：${e.message}`);
+		}
+
+		try {
+			await c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_account_email ON account (email)`).run();
+			await c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email ON user (email)`).run();
+		} catch (e) {
+			console.warn(`跳过添加唯一邮箱索引，原因：${e.message}`);
+		}
+
+	},
+
+	async v1_1DB(c) {
 		// 添加字段
 		const ADD_COLUMN_SQL_LIST = [
 			`ALTER TABLE email ADD COLUMN type INTEGER NOT NULL DEFAULT 0;`,
@@ -81,7 +122,6 @@ const initService = {
         (11, '用户删除', 'user:delete', 6, 2, 7),
         (12, '用户收藏', 'user:star', 6, 2, 5),
         (13, '权限控制', '', 0, 1, 5),
-		(30, '身份添加', 'role:add', 13, 2, -1),
         (14, '身份查看', 'role:query', 13, 2, 0),
         (15, '身份修改', 'role:set', 13, 2, 1),
         (16, '身份删除', 'role:delete', 13, 2, 2),
@@ -97,7 +137,8 @@ const initService = {
         (26, '发件重置', 'user:reset-send', 6, 2, 6),
         (27, '邮件列表', '', 0, 1, 4),
         (28, '邮件查看', 'sys-email:query', 27, 2, 0),
-        (29, '邮件删除', 'sys-email:delete', 27, 2, 0)
+        (29, '邮件删除', 'sys-email:delete', 27, 2, 0),
+				(30, '身份添加', 'role:add', 13, 2, -1)
       `).run();
 		}
 
@@ -163,7 +204,6 @@ const initService = {
         email_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         send_email TEXT,
         name TEXT,
-        receive_email TEXT NOT NULL,
         account_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
         subject TEXT,
@@ -247,7 +287,55 @@ const initService = {
       SELECT 0, 0, 0, 1, 'Cloud 邮箱', 0, 1, 1
       WHERE NOT EXISTS (SELECT 1 FROM setting)
     `).run();
+	},
+
+	async receiveEmailToRecipient(c) {
+
+		const receiveEmailColumn = await c.env.db.prepare(`SELECT * FROM pragma_table_info('email') WHERE name = 'receive_email' limit 1`).first();
+
+		if (!receiveEmailColumn) {
+			return
+		}
+
+		const queryList = []
+		const {results} = await c.env.db.prepare('SELECT receive_email,email_id FROM email').all();
+		results.forEach(emailRow => {
+			const recipient = {}
+			recipient.address = emailRow.receive_email
+			recipient.name = ''
+			const recipientStr = JSON.stringify([recipient]);
+			const sql = c.env.db.prepare('UPDATE email SET recipient = ? WHERE email_id = ?').bind(recipientStr,emailRow.email_id);
+			queryList.push(sql)
+		})
+
+		queryList.push(c.env.db.prepare("ALTER TABLE email DROP COLUMN receive_email"));
+
+		await c.env.db.batch(queryList);
+	},
+
+
+	async initAccountName(c) {
+
+		const nameColumn = await c.env.db.prepare(`SELECT * FROM pragma_table_info('account') WHERE name = 'name' limit 1`).first();
+
+		if (nameColumn) {
+			return
+		}
+
+		const queryList = []
+
+		queryList.push(c.env.db.prepare(`ALTER TABLE account ADD COLUMN name TEXT NOT NULL DEFAULT ''`));
+
+		const {results} = await c.env.db.prepare(`SELECT account_id, email FROM account`).all();
+
+		results.forEach(accountRow => {
+			const name = emailUtils.getName(accountRow.email);
+			const sql = c.env.db.prepare('UPDATE account SET name = ? WHERE account_id = ?').bind(name,accountRow.account_id);
+			queryList.push(sql)
+		})
+
+		await c.env.db.batch(queryList);
 	}
 };
 
-export default initService;
+export default init;

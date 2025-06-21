@@ -114,7 +114,7 @@ router.afterEach((to) => {
         }
     }
 
-    if (window.innerWidth < 1024) {
+    if (window.innerWidth < 1025) {
         uiStore.asideShow = false
     }
 })

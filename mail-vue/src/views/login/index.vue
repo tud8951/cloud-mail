@@ -90,7 +90,6 @@ import router from "@/router";
 import {computed, nextTick, reactive, ref} from "vue";
 import {login} from "@/request/login.js";
 import {register} from "@/request/login.js";
-import {ElMessage} from 'element-plus'
 import {isEmail} from "@/utils/verify-utils.js";
 import {useSettingStore} from "@/store/setting.js";
 import {useAccountStore} from "@/store/account.js";
@@ -328,7 +327,6 @@ function submitRegister() {
   box-shadow: var(--el-box-shadow-light);
   @media (max-width: 1024px) {
     padding: 20px 18px;
-    border-radius: 6px;
     width: 384px;
     margin-left: 18px;
   }

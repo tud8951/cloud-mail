@@ -5,7 +5,7 @@ import userService from './user-service';
 import emailService from './email-service';
 import orm from '../entity/orm';
 import account from '../entity/account';
-import { and, asc, eq, gt, inArray, count, like } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, count, sql } from 'drizzle-orm';
 import { isDel } from '../const/entity-const';
 import settingService from './setting-service';
 import turnstileService from './turnstile-service';
@@ -33,7 +33,7 @@ const accountService = {
 			throw new BizError('不存在的邮箱域名');
 		}
 
-		const accountRow = await this.selectByEmailIncludeDel(c, email);
+		const accountRow = await this.selectByEmailIncludeDelNoCase(c, email);
 
 		if (accountRow && accountRow.isDel === isDel.DELETE) {
 			throw new BizError('该邮箱已被注销');
@@ -55,9 +55,16 @@ const accountService = {
 			await turnstileService.verify(c, token);
 		}
 
-		return orm(c).insert(account).values({ email: email, userId: userId }).returning().get();
+		return orm(c).insert(account).values({ email: email, userId: userId, name: emailUtils.getName(email) }).returning().get();
 	},
 
+	selectByEmailIncludeDelNoCase(c, email) {
+		return orm(c)
+			.select()
+			.from(account)
+			.where(sql`${account.email} COLLATE NOCASE = ${email}`)
+			.get();
+	},
 	selectByEmailIncludeDel(c, email) {
 		return orm(c).select().from(account).where(eq(account.email, email)).get();
 	},
@@ -170,6 +177,11 @@ const accountService = {
 
 	async restoreByUserId(c, userId) {
 		await orm(c).update(account).set({isDel: isDel.NORMAL}).where(eq(account.userId, userId)).run();
+	},
+
+	async setName(c, params, userId) {
+		const { name, accountId } = params
+		await orm(c).update(account).set({name}).where(and(eq(account.userId, userId),eq(account.accountId, accountId))).run();
 	}
 };
 

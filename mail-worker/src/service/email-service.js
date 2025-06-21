@@ -15,6 +15,9 @@ import roleService from './role-service';
 import user from '../entity/user';
 import account from '../entity/account';
 import starService from './star-service';
+import dayjs from 'dayjs';
+import kvConst from '../const/kv-const';
+import constant from '../const/constant';
 
 const emailService = {
 
@@ -146,10 +149,9 @@ const emailService = {
 
 	async send(c, params, userId) {
 
-		let { accountId, name, receiveEmail, text, content, subject, attachments } = params;
+		let { accountId, name, sendType, emailId, receiveEmail, manyType, text, content, subject, attachments } = params;
 
 		const { resendTokens, r2Domain, send } = await settingService.query(c);
-
 
 		const { attDataList, html } = await attService.toImageUrlHtml(c, content, r2Domain);
 
@@ -173,13 +175,26 @@ const emailService = {
 			throw new BizError('邮箱发送功能已停用', 403);
 		}
 
+		if (attachments.length > 0 && manyType === 'divide') {
+			throw new BizError('分别发送暂时不支持附件');
+		}
+
 
 		const userRow = await userService.selectById(c, userId);
 		const roleRow = await roleService.selectById(c, userRow.type);
 
-		if (userRow.sendCount >= roleRow.sendCount && c.env.admin !== userRow.email) {
-			if (roleRow.sendType === 'day') throw new BizError('已到达每日发送数量限制', 403);
-			if (roleRow.sendType === 'count') throw new BizError('已到达发送数量限制', 403);
+		if (c.env.admin !== userRow.email && roleRow.sendCount) {
+
+			if (userRow.sendCount >= roleRow.sendCount) {
+				if (roleRow.sendType === 'day') throw new BizError('已到达每日发送次数限制', 403);
+				if (roleRow.sendType === 'count') throw new BizError('已到达发送次数限制', 403);
+			}
+
+			if (userRow.sendCount + receiveEmail.length > roleRow.sendCount) {
+				if (roleRow.sendType === 'day') throw new BizError('剩余每日发送次数不足', 403);
+				if (roleRow.sendType === 'count') throw new BizError('剩余发送次数不足', 403);
+			}
+
 		}
 
 
@@ -203,53 +218,161 @@ const emailService = {
 			name = emailUtils.getName(accountRow.email);
 		}
 
+
+		let emailRow = {
+			messageId: null
+		};
+
+		if (sendType === 'reply') {
+
+			emailRow = await this.selectById(c, emailId);
+
+			if (!emailRow) {
+				throw new BizError('邮件不存在无法回复');
+			}
+
+		}
+
+		let resendResult = null;
+
 		const resend = new Resend(resendToken);
 
-		const { data, error } = await resend.emails.send({
-			from: `${name} <${accountRow.email}>`,
-			to: [receiveEmail],
-			subject: subject,
-			text: text,
-			html: html,
-			attachments: attachments
-		});
+		if (manyType === 'divide') {
+
+			let sendFormList = [];
+
+			receiveEmail.forEach(email => {
+				const sendForm = {
+					from: `${name} <${accountRow.email}>`,
+					to: [email],
+					subject: subject,
+					text: text,
+					html: html
+				};
+
+				if (sendType === 'reply') {
+					sendForm.headers = {
+						'in-reply-to': emailRow.messageId,
+						'references': emailRow.messageId
+					};
+				}
+
+				sendFormList.push(sendForm);
+			});
+
+			resendResult = await resend.batch.send(sendFormList);
+
+		} else {
+
+			const sendForm = {
+				from: `${name} <${accountRow.email}>`,
+				to: [...receiveEmail],
+				subject: subject,
+				text: text,
+				html: html,
+				attachments: attachments
+			};
+
+			if (sendType === 'reply') {
+				sendForm.headers = {
+					'in-reply-to': emailRow.messageId,
+					'references': emailRow.messageId
+				};
+			}
+
+			resendResult = await resend.emails.send(sendForm);
+
+		}
+
+		const { data, error } = resendResult;
+
 
 		if (error) {
 			console.error(error);
 			throw new BizError(error.message);
 		}
 
+
 		const emailData = {};
 		emailData.sendEmail = accountRow.email;
 		emailData.name = name;
 		emailData.subject = subject;
-		emailData.receiveEmail = receiveEmail;
 		emailData.content = html;
 		emailData.text = text;
 		emailData.accountId = accountId;
 		emailData.type = emailConst.type.SEND;
 		emailData.userId = userId;
 		emailData.status = emailConst.status.SENT;
-		emailData.resendEmailId = data.id;
 
-		const emailRow = await orm(c).insert(email).values(emailData).returning().get();
+		const emailDataList = [];
 
-		if (attDataList.length > 0) {
-			await attService.saveArticleAtt(c, attDataList, userId, accountId, emailRow.emailId);
+		if (manyType === 'divide') {
+
+			receiveEmail.forEach((item, index) => {
+				const emailDataItem = { ...emailData };
+				emailDataItem.resendEmailId = data.data[index].id;
+				emailDataItem.recipient = JSON.stringify([{ address: item, name: '' }]);
+				emailDataList.push(emailDataItem);
+			});
+
+		} else {
+
+			emailData.resendEmailId = data.id;
+
+			const recipient = [];
+
+			receiveEmail.forEach(item => {
+				recipient.push({ address: item, name: '' });
+			});
+
+			emailData.recipient = JSON.stringify(recipient);
+
+			emailDataList.push(emailData);
 		}
+
+		if (sendType === 'reply') {
+			emailDataList.forEach(emailData => {
+				emailData.inReplyTo = emailRow.messageId;
+				emailData.relation = emailRow.messageId;
+			});
+		}
+
 
 		if (roleRow.sendCount) {
-			await userService.incrUserService(c, 1, userId);
+			await userService.incrUserSendCount(c, receiveEmail.length, userId);
 		}
 
-		if (attachments?.length > 0 && c.env.r2) {
-			await attService.saveSendAtt(c, attachments, userId, accountId, emailRow.emailId);
+		const emailRowList = await Promise.all(
+			emailDataList.map(async (emailData) => {
+				const emailRow = await orm(c).insert(email).values(emailData).returning().get();
+
+				if (attDataList.length > 0) {
+					await attService.saveArticleAtt(c, attDataList, userId, accountId, emailRow.emailId);
+				}
+
+				if (attachments?.length > 0 && c.env.r2) {
+					await attService.saveSendAtt(c, attachments, userId, accountId, emailRow.emailId);
+				}
+
+				const attsList = await attService.selectByEmailIds(c, [emailRow.emailId]);
+				emailRow.attList = attsList;
+
+				return emailRow;
+			})
+		);
+
+		const dateStr = dayjs().format('YYYY-MM-DD');
+
+		let daySendTotal = await c.env.kv.get(kvConst.SEND_DAY_COUNT + dateStr);
+
+		if (!daySendTotal) {
+			await c.env.kv.put(kvConst.SEND_DAY_COUNT + dateStr, JSON.stringify(receiveEmail.length), { expirationTtl: 60 * 60 * 24 });
+		} else  {
+			daySendTotal = Number(daySendTotal) + receiveEmail.length
+			await c.env.kv.put(kvConst.SEND_DAY_COUNT + dateStr, JSON.stringify(daySendTotal), { expirationTtl: 60 * 60 * 24 });
 		}
 
-		const attsList = await attService.selectByEmailIds(c, [emailRow.emailId]);
-		emailRow.attList = attsList;
-
-		return emailRow;
+		return emailRowList;
 	},
 
 	selectById(c, emailId) {
@@ -398,7 +521,7 @@ const emailService = {
 			conditions.push(like(email.subject, `${subject}%`));
 		}
 
-		conditions.push(ne(email.status, emailConst.status.SAVING))
+		conditions.push(ne(email.status, emailConst.status.SAVING));
 
 		const countConditions = [...conditions];
 
@@ -447,7 +570,10 @@ const emailService = {
 	},
 
 	async completeReceive(c, emailId) {
-		await orm(c).update(email).set({ isDel: isDel.NORMAL, status: emailConst.status.RECEIVE }).where(eq(email.emailId, emailId)).run();
+		await orm(c).update(email).set({
+			isDel: isDel.NORMAL,
+			status: emailConst.status.RECEIVE
+		}).where(eq(email.emailId, emailId)).run();
 	}
 };
 

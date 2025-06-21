@@ -25,6 +25,9 @@
             <div class="details-avatar">
               {{ formatName(userStore.user.email) }}
             </div>
+            <div class="user-name">
+              {{userStore.user.name}}
+            </div>
             <div class="detail-email">
               {{ userStore.user.email }}
             </div>
@@ -43,9 +46,10 @@
                   <el-tag v-else >{{sendType}}</el-tag>
                 </div>
                 <div>
-                  <span v-if="accountCount && hasPerm('account:add')" style="margin-right: 5px">{{  accountCount }}个</span>
-                  <el-tag v-if="!accountCount && hasPerm('account:add')" >无限制</el-tag>
-                  <el-tag v-if="!hasPerm('account:add')" >无权限</el-tag>
+                  <el-tag v-if="settingStore.settings.manyEmail || settingStore.settings.addEmail" >已关闭</el-tag>
+                  <span v-else-if="accountCount && hasPerm('account:add')" style="margin-right: 5px">{{  accountCount }}个</span>
+                  <el-tag v-else-if="!accountCount && hasPerm('account:add')" >无限制</el-tag>
+                  <el-tag v-else-if="!hasPerm('account:add')" >无权限</el-tag>
                 </div>
               </div>
             </div>
@@ -55,6 +59,9 @@
           </div>
         </template>
       </el-dropdown>
+      <div class="full" @click="full">
+        <Icon icon="iconamoon:screen-full-light" width="22" height="22" />
+      </div>
     </div>
   </div>
 </template>
@@ -68,9 +75,12 @@ import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
 import { useRoute } from "vue-router";
 import {computed, ref} from "vue";
+import {useSettingStore} from "@/store/setting.js";
 import hasPerm from "@/utils/perm.js";
+import screenfull from "screenfull";
 
 const route = useRoute();
+const settingStore = useSettingStore();
 const userStore = useUserStore();
 const uiStore = useUiStore();
 const logoutLoading = ref(false)
@@ -131,6 +141,10 @@ function formatName(email) {
   return email[0]?.toUpperCase() || ''
 }
 
+function full() {
+  screenfull.toggle();
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -141,14 +155,8 @@ function formatName(email) {
   white-space: nowrap;
 }
 
-.setting-icon {
-  margin-right: 10px;
-  position: relative;
-  bottom: 10px;
-}
-
 :deep(.el-popper.is-pure) {
-  border-radius: 10px;
+  border-radius: 6px;
 }
 
 .user-details {
@@ -158,7 +166,17 @@ function formatName(email) {
   display: grid;
   grid-template-columns: 1fr;
   justify-items: center;
-
+  .user-name {
+    font-weight: bold;
+    margin-top: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+    width: 250px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: center;
+  }
   .detail-user-type {
     margin-top: 10px;
   }
@@ -187,12 +205,12 @@ function formatName(email) {
   .detail-email {
     padding-left: 20px;
     padding-right: 20px;
-    margin-top: 10px;
     width: 250px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     text-align: center;
+    color: #5c5958;
   }
   .logout {
     margin-top: 20px;
@@ -201,7 +219,7 @@ function formatName(email) {
     padding-right: 10px;
     padding-bottom: 10px;
     .el-button {
-      border-radius: 8px;
+      border-radius: 6px;
       height: 28px;
       width: 100%;
     }
@@ -264,9 +282,21 @@ function formatName(email) {
 
 .toolbar {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   margin-left: auto;
-  gap: 10px;
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr auto;
+  }
+  .full {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-right: 20px;
+    cursor: pointer;
+    @media (max-width: 1024px) {
+      display: none;
+    }
+  }
   .email {
     align-self: center;
     font-size: 14px;
@@ -276,13 +306,13 @@ function formatName(email) {
     text-overflow: ellipsis;
     font-weight: bold;
     width: 100%;
-
   }
 
   .avatar {
     display: flex;
     align-items: center;
     cursor: pointer;
+    margin-left: 10px;
     .avatar-text {
       height: 30px;
       width: 30px;
@@ -296,6 +326,11 @@ function formatName(email) {
     .setting-icon {
       position: relative;
       top: 0;
+      margin-right: 5px;
+      bottom: 10px;
+      @media (max-width: 1024px) {
+        margin-right: 10px;
+      }
     }
   }
 

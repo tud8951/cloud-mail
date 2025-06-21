@@ -3,40 +3,38 @@
     <div class="write-box">
       <div class="title">
         <div class="title-left">
-          <span class="title-text">写邮件</span>
+          <span class="title-text">
+            <Icon icon="hugeicons:quill-write-01" width="28" height="28" />
+          </span>
+          <span class="sender">发件人:</span>
+          <span class="sender-name">{{form.name}}</span>
+          <span class="send-email"><{{form.sendEmail}}></span>
         </div>
         <div @click="close" style="cursor: pointer;">
           <Icon icon="material-symbols-light:close-rounded" width="22" height="22"/>
         </div>
       </div>
       <div class="container">
-        <el-input v-model="form.sendEmail" disabled placeholder="">
+        <el-input-tag @add-tag="addTagChange" tag-type="primary" size="default" v-model="form.receiveEmail" placeholder="多邮个箱用, 分开 example1.com,example2.com" >
           <template #prefix>
-            <div class="item-title">发件人 :</div>
+            <div class="item-title">收件人 </div>
+          </template>
+          <template #suffix>
+            <span class="distribute" :class="form.manyType ? 'checked' : ''" @click.stop="checkDistribute" >分别发送</span>
+          </template>
+        </el-input-tag>
+        <el-input v-model="form.subject" placeholder="请输入邮件主题">
+          <template #prefix>
+            <div class="item-title">主题 </div>
           </template>
         </el-input>
-        <el-input v-model="form.receiveEmail" placeholder="收件人邮箱地址">
-          <template #prefix>
-            <div class="item-title">收件人 :</div>
-          </template>
-        </el-input>
-        <el-input v-model="form.name" placeholder="发件人名字,不填则默认使用邮箱名">
-          <template #prefix>
-            <div class="item-title">名字 :</div>
-          </template>
-        </el-input>
-        <el-input v-model="form.subject" placeholder="邮件主题">
-          <template #prefix>
-            <div class="item-title">主题 :</div>
-          </template>
-        </el-input>
-        <tinyEditor ref="editor" @change="change"/>
+        <tinyEditor :def-value="defValue" ref="editor" @change="change"/>
         <div class="button-item">
           <div class="att-add" @click="chooseFile">
-            <Icon icon="iconamoon:attachment-fill" width="26" height="26"/>
+            <Icon icon="iconamoon:attachment-fill" width="24" height="24"/>
           </div>
           <div class="att-clear" @click="clearContent">
-            <Icon icon="icon-park-outline:clear-format" width="26" height="26"/>
+            <Icon icon="icon-park-outline:clear-format" width="24" height="24 "/>
           </div>
           <div class="att-list">
             <div class="att-item" v-for="(item,index) in form.attachments" :key="index">
@@ -48,7 +46,8 @@
             </div>
           </div>
           <div>
-            <el-button type="primary" @click="sendEmail">发送</el-button>
+            <el-button type="primary" @click="sendEmail" v-if="form.sendType === 'reply'">回复</el-button>
+            <el-button type="primary" @click="sendEmail" v-else >发送</el-button>
           </div>
         </div>
       </div>
@@ -62,15 +61,16 @@ import {Icon} from "@iconify/vue";
 import {useUserStore} from "@/store/user.js";
 import {emailSend} from "@/request/email.js";
 import {isEmail} from "@/utils/verify-utils.js";
-import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {useAccountStore} from "@/store/account.js";
 import {useEmailStore} from "@/store/email.js";
 import {fileToBase64, formatBytes} from "@/utils/file-utils.js";
 import {getIconByName} from "@/utils/icon-utils.js";
 import sendPercent from "@/components/send-percent/index.vue"
+import {formatDetailDate} from "@/utils/day.js";
 
 defineExpose({
-  open
+  open,
+  openReply
 })
 
 const emailStore = useEmailStore();
@@ -81,16 +81,42 @@ const show = ref(false);
 const percent = ref(0)
 let percentMessage = null
 let sending = false
+const defValue = ref('')
 const form = reactive({
   sendEmail: '',
-  receiveEmail: '',
+  receiveEmail: [],
   accountId: -1,
+  manyType: null,
   name: '',
   subject: '',
   content: '',
+  sendType: '',
   text: '',
+  emailId: 0,
   attachments: []
 })
+
+function addTagChange(val) {
+
+  const emails = Array.from(new Set(
+      val.split(/[,，]/).map(item => item.trim()).filter(item => item)
+  ));
+
+  form.receiveEmail.splice(form.receiveEmail.length - 1, 1)
+
+  emails.forEach(email => {
+    if (isEmail(email) && !form.receiveEmail.includes(email)) {
+      form.receiveEmail.push(email)
+    }
+
+  })
+
+
+}
+
+function checkDistribute() {
+  form.manyType = form.manyType ? null : 'divide'
+}
 
 function clearContent() {
   ElMessageBox.confirm('确定要清空邮件吗?', {
@@ -135,18 +161,9 @@ function chooseFile() {
 
 async function sendEmail() {
 
-  if (!form.receiveEmail) {
+  if (form.receiveEmail.length === 0) {
     ElMessage({
       message: '收件人邮箱地址不能为空',
-      type: 'error',
-      plain: true,
-    })
-    return
-  }
-
-  if (!isEmail(form.receiveEmail)) {
-    ElMessage({
-      message: '请输入正确的收件人邮箱',
       type: 'error',
       plain: true,
     })
@@ -165,6 +182,15 @@ async function sendEmail() {
   if (!form.content) {
     ElMessage({
       message: '正文不能为空',
+      type: 'error',
+      plain: true,
+    })
+    return
+  }
+
+  if (form.manyType === 'divide' && form.attachments.length > 0) {
+    ElMessage({
+      message: '分别发送暂时不支持附件',
       type: 'error',
       plain: true,
     })
@@ -192,8 +218,11 @@ async function sendEmail() {
   close()
   emailSend(form, (e) => {
     percent.value = Math.round((e.loaded * 98) / e.total)
-  }).then(email => {
-    emailStore.sendScroll?.addItem(email)
+  }).then(emailList => {
+    const email = emailList[0]
+    emailList.forEach(item => {
+      emailStore.sendScroll?.addItem(item)
+    })
     resetForm()
     show.value = false
     ElNotification({
@@ -219,11 +248,13 @@ async function sendEmail() {
 
 
 function resetForm() {
-  form.receiveEmail = ''
-  form.name = ''
+  form.receiveEmail = []
   form.subject = ''
   form.content = ''
+  form.manyType = null
   form.attachments = []
+  form.sendType = null
+  form.emailId = 0
   editor.value.clearEditor()
 }
 
@@ -232,15 +263,45 @@ function change(content, text) {
   form.text = text
 }
 
+function openReply(email) {
+
+  resetForm();
+
+  email.subject = email.subject || ''
+
+  form.receiveEmail.push(email.sendEmail)
+  form.subject = (email.subject.startsWith('Re:') || email.subject.startsWith('回复：')) ? email.subject : 'Re: ' + email.subject
+  form.sendType = 'reply'
+  form.emailId = email.emailId
+
+  defValue.value = ''
+
+  setTimeout(() => {
+    defValue.value = `
+    <div></div>
+    <div>
+    <br>
+        ${ formatDetailDate(email.createTime) }，${email.name} &lt${email.sendEmail}&gt 来信:
+    </div>
+    <blockquote style="margin: 0 0 0 0.8ex;border-left: 1px solid rgb(204,204,204);padding-left: 1ex;">${email.content}</blockquote>`
+    open()
+  })
+
+
+}
+
 function open() {
   if (!accountStore.currentAccount.email) {
     form.sendEmail = userStore.user.email;
     form.accountId = userStore.user.accountId;
+    form.name = userStore.user.name;
   } else {
     form.sendEmail = accountStore.currentAccount.email;
     form.accountId = accountStore.currentAccount.accountId;
+    form.name = accountStore.currentAccount.name;
   }
   show.value = true;
+  editor.value.focus()
 }
 
 const handleKeyDown = (event) => {
@@ -276,22 +337,24 @@ function close() {
 
   .write-box {
     background: #FFFFFF;
-    width: 902px;
+    width: min(1200px,calc(100% - 80px));
     box-shadow: var(--el-box-shadow-light);
     border: 1px solid var(--el-border-color-light);
     transition: var(--el-transition-duration);
     padding: 15px;
     border-radius: 8px;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
     @media (max-width: 1024px) {
       width: 100%;
       height: 100%;
       border-radius: 0;
+      padding-top: 10px;
     }
 
-    @media (min-width: 1024px) {
-      height: min(750px, calc(100vh - 60px));
+    @media (min-width: 1025px) {
+      height: min(800px, calc(100vh - 60px));
     }
 
     .title {
@@ -300,28 +363,63 @@ function close() {
       margin-bottom: 10px;
       .title-left {
         align-items: center;
-        display: flex;
-        gap: 10px;
+        display: grid;
+        grid-template-columns: auto auto auto 1fr;
       }
       .title-text {
+      }
+
+      .sender {
+        margin-left: 8px;
+      }
+
+      .sender-name {
+        margin-left: 8px;
         font-weight: bold;
-        font-size: 16px;
+      }
+
+      .send-email {
+        color: #999896;
+        margin-left: 5px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
       }
 
       div {
         display: flex;
+        align-items: center;
       }
     }
 
     .container {
       height: 100%;
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
       gap: 15px;
+      .distribute {
+        color: var(--el-color-info);
+        background: var(--el-color-info-light-9);
+        border: var(--el-color-info-light-8);
+        border-radius: 4px;
+        font-size: 12px;
+        padding: 0 5px;
+      }
+
+      .distribute.checked {
+        background: var(--el-color-primary-light-9);
+        color: var(--el-color-primary) !important;
+        border-radius: 4px;
+      }
+
+
+      .distribute:hover {
+        background: var(--el-color-primary-light-9);
+        color: var(--el-color-primary) !important;
+        border-radius: 4px;
+      }
 
       .item-title {
-        color: #333;
-        margin-right: 8px;
       }
 
       .button-item {
@@ -371,6 +469,11 @@ function close() {
   }
 
 }
+
+:deep(.el-input-tag__suffix) {
+  padding-right: 4px;
+}
+
 .icon {
   cursor: pointer;
 }

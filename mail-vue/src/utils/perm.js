@@ -56,5 +56,15 @@ const routers = {
             name: 'sys-email',
             menu: true
         }
+    },
+    'analysis:query': {
+        path: '/analysis',
+        name: 'analysis',
+        component: () => import('@/views/analysis/index.vue'),
+        meta: {
+            title: '分析页',
+            name: 'analysis',
+            menu: true
+        }
     }
 }

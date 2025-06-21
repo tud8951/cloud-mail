@@ -1,7 +1,7 @@
 <template>
   <div class="account-box">
     <div class="head-opt" >
-      <Icon v-if="settingStore.settings.addEmail === 0" v-perm="'account:add'" class="icon" icon="ion:add-outline" width="23" height="23" @click="add" />
+      <Icon v-perm="'account:add'" class="icon" icon="ion:add-outline" width="23" height="23" @click="add" />
       <Icon class="icon" icon="ion:reload" width="18" height="18"  @click="refresh" />
     </div>
     <el-scrollbar class="scrollbar">
@@ -15,12 +15,12 @@
               <Icon  icon="eva:email-fill" width="22" height="22" color="#fbbd08" />
             </div>
             <div class="settings" @click.stop>
-              <Icon v-if="item.accountId === userStore.user.accountId || !hasPerm('account:delete')" icon="fluent:settings-24-filled" width="20" height="20" color="#909399" />
-              <el-dropdown v-else >
+              <el-dropdown>
                 <Icon icon="fluent:settings-24-filled" width="20" height="20" color="#909399" />
                 <template #dropdown >
                   <el-dropdown-menu>
-                    <el-dropdown-item @click="remove(item)">删除</el-dropdown-item>
+                    <el-dropdown-item @click="openSetName(item)">改名</el-dropdown-item>
+                    <el-dropdown-item v-if="item.accountId !== userStore.user.accountId && hasPerm('account:delete')" @click="remove(item)">删除</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -69,7 +69,7 @@
     </el-scrollbar>
     <el-dialog v-model="showAdd" title="添加邮箱" >
         <div class="container">
-          <el-input v-model="addForm.email" type="text" placeholder="邮箱" autocomplete="off">
+          <el-input v-model="addForm.email" ref="addRef" type="text" placeholder="邮箱" autocomplete="off">
             <template #append>
               <div  @click.stop="openSelect">
                 <el-select
@@ -103,13 +103,21 @@
           data-callback="onTurnstileSuccess"
       ></div>
     </el-dialog>
+    <el-dialog v-model="setNameShow" title="修改名字" >
+      <div class="container">
+        <el-input v-model="accountName" type="text" placeholder="名字" autocomplete="off">
+        </el-input>
+        <el-button class="btn" type="primary" @click="setName" :loading="setNameLoading"
+        >保存
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 <script setup>
 import {Icon} from "@iconify/vue";
-import {nextTick, reactive, ref} from "vue";
-import {accountList, accountAdd, accountDelete} from "@/request/account.js";
-import {ElMessage, ElMessageBox} from "element-plus";
+import {nextTick, reactive, ref, watch} from "vue";
+import {accountList, accountAdd, accountDelete, accountSetName} from "@/request/account.js";
 import {isEmail} from "@/utils/verify-utils.js";
 import {useSettingStore} from "@/store/setting.js";
 import {useAccountStore} from "@/store/account.js";
@@ -127,6 +135,11 @@ const noLoading = ref(false)
 const loading = ref(false)
 const followLoading = ref(false);
 const verifyShow = ref(false)
+const setNameShow = ref(false)
+const setNameLoading = ref(false)
+const accountName = ref(null)
+const addRef = ref({})
+let account = null
 let turnstileId = null
 let verifyToken = ''
 const addForm = reactive({
@@ -144,6 +157,10 @@ if (hasPerm('account:query')) {
   getAccountList()
 }
 
+watch(() => accountStore.changeUserAccountName, () => {
+  accounts[0].name = accountStore.changeUserAccountName
+})
+
 
 const openSelect = () => {
   mySelect.value.toggleMenu()
@@ -155,6 +172,49 @@ window.onTurnstileSuccess = (token) => {
     verifyShow.value = false
   },1500)
 };
+
+function setName() {
+
+  let name = accountName.value
+
+  if (name === account.name) {
+    setNameShow.value = false
+    return
+  }
+
+  if (!name) {
+    ElMessage({
+      message: '用户名不能为空',
+      type: 'error',
+      plain: true,
+    })
+    return;
+  }
+
+  setNameLoading.value = true
+  accountSetName(account.accountId,name).then(() => {
+    account.name = name
+    setNameShow.value = false
+
+    if (account.accountId === userStore.user.accountId) {
+      userStore.user.name = name
+    }
+
+    ElMessage({
+      message: "保存成功",
+      type: "success",
+      plain: true
+    })
+  }).finally(()=> {
+    setNameLoading.value = false
+  })
+}
+
+function openSetName (accountItem) {
+  accountName.value = accountItem.name
+  account = accountItem
+  setNameShow.value = true
+}
 
 function itemBg(accountId) {
   return accountStore.currentAccountId === accountId ? 'item-choose' : ''
@@ -199,6 +259,9 @@ function changeAccount(account) {
 
 function add() {
   showAdd.value = true
+  setTimeout(() => {
+    addRef.value.focus()
+  },100)
 }
 
 function getAccountList() {

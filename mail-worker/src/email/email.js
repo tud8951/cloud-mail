@@ -28,13 +28,20 @@ export async function email(message, env, ctx) {
 
 		const email = await PostalMime.parse(content);
 
+		console.warn(email)
+
 		const params = {
 			sendEmail: email.from.address,
 			name: email.from.name,
-			receiveEmail: message.to,
 			subject: email.subject,
 			content: email.html,
 			text: email.text,
+			cc: email.cc ? JSON.stringify(email.cc) : '[]',
+			bcc:email.bcc ? JSON.stringify(email.bcc) : '[]',
+			recipient: JSON.stringify(email.to),
+			inReplyTo: email.inReplyTo,
+			relation: email.references,
+			messageId: email.messageId,
 			userId: account.userId,
 			accountId: account.accountId,
 			isDel: isDel.DELETE,

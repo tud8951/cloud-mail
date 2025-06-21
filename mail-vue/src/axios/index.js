@@ -1,6 +1,5 @@
 import axios from "axios";
 import router from "@/router";
-import {ElMessage} from 'element-plus';
 
 let http = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL
@@ -27,6 +26,8 @@ http.interceptors.response.use((res) => {
                     message: data.message,
                     type: 'error',
                     plain: true,
+                    grouping: true,
+                    repeatNum: -4,
                 })
                 localStorage.removeItem('token')
                 router.push('/login')
@@ -36,6 +37,8 @@ http.interceptors.response.use((res) => {
                     message: data.message,
                     type: 'warning',
                     plain: true,
+                    grouping: true,
+                    repeatNum: -4,
                 })
                 reject(data)
             } else if (data.code !== 200) {
@@ -43,8 +46,9 @@ http.interceptors.response.use((res) => {
                     message: data.message,
                     type: 'error',
                     plain: true,
+                    grouping: true,
+                    repeatNum: -4,
                 })
-
                 reject(data)
             }
             resolve(data.data)
@@ -61,12 +65,15 @@ http.interceptors.response.use((res) => {
                 message: '网络错误,请检查网络连接',
                 type: 'error',
                 plain: true,
+                grouping: true,
+                repeatNum: -4,
             })
         } else if (error.code === 'ECONNABORTED') {
             ElMessage({
                 message: '请求超时,请稍后重试',
                 type: 'error',
                 plain: true,
+                grouping: true
             })
             ElMessage.error('')
         } else if (error.response) {
@@ -74,12 +81,16 @@ http.interceptors.response.use((res) => {
                 message: `服务器繁忙`,
                 type: 'error',
                 plain: true,
+                grouping: true,
+                repeatNum: -4,
             })
         } else {
             ElMessage({
                 message: '请求失败,请稍后再试',
                 type: 'error',
                 plain: true,
+                grouping: true,
+                repeatNum: -4,
             })
         }
         return Promise.reject(error)

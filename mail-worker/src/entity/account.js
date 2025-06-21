@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 export const account = sqliteTable('account', {
 	accountId: integer('account_id').primaryKey({ autoIncrement: true }),
 	email: text('email').notNull(),
+	name: text('name').notNull().default(''),
 	status: integer('status').default(0).notNull(),
 	latestEmailTime: text('latest_email_time'),
 	createTime: text('create_time').default(sql`CURRENT_TIMESTAMP`),

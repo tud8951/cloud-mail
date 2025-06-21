@@ -3,7 +3,7 @@ import {getExtName} from "@/utils/file-utils.js";
 export function getIconByName(filename) {
     const extName = getExtName(filename)
     if (['zip', 'rar', '7z', 'tar', 'tgz'].includes(extName)) return 'octicon:file-zip-24';
-    if (['png', 'jpg', 'jpeg','gif','webp'].includes(extName)) return 'mingcute:pic-line';
+    if (['png', 'jpg', 'jpeg','gif','webp','jfif'].includes(extName)) return 'mingcute:pic-line';
     if (['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv'].includes(extName)) return 'fluent:video-clip-24-regular';
     if (['txt', 'doc', 'docx', 'md','ini','conf'].includes(extName)) return 'hugeicons:google-doc'
     if (['xls', 'csv', 'xlsx'].includes(extName)) return 'codicon:table';

@@ -38,7 +38,7 @@ const loginService = {
 			throw new BizError('非法邮箱域名');
 		}
 
-		const accountRow = await accountService.selectByEmailIncludeDel(c, email);
+		const accountRow = await accountService.selectByEmailIncludeDelNoCase(c, email);
 
 		if (accountRow && accountRow.isDel === isDel.DELETE) {
 			throw new BizError('该邮箱已被注销');
@@ -60,7 +60,7 @@ const loginService = {
 
 		await userService.updateUserInfo(c, userId, true);
 
-		await accountService.insert(c, { userId: userId, email });
+		await accountService.insert(c, { userId: userId, email, name: emailUtils.getName(email) });
 	},
 
 	async login(c, params) {
@@ -109,7 +109,6 @@ const loginService = {
 			authInfo.tokens.push(uuid);
 
 		}
-
 
 		await userService.updateUserInfo(c, userRow.userId);
 

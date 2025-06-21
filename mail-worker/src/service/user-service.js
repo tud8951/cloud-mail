@@ -33,6 +33,7 @@ const userService = {
 		user.sendCount = userRow.sendCount;
 		user.email = userRow.email;
 		user.accountId = account.accountId;
+		user.name = account.name;
 		user.permKeys = permKeys;
 		user.role = roleRow
 
@@ -304,7 +305,7 @@ const userService = {
 
 	},
 
-	async incrUserService(c, quantity, userId) {
+	async incrUserSendCount(c, quantity, userId) {
 		await orm(c).update(user).set({
 			sendCount: sql`${user.sendCount}
 	  +
@@ -352,7 +353,7 @@ const userService = {
 
 		const userId = await userService.insert(c, { email, password: hash, salt, type });
 
-		await accountService.insert(c, { userId: userId, email, type });
+		await accountService.insert(c, { userId: userId, email, type, name: emailUtils.getName(email) });
 	},
 
 	async resetDaySendCount(c) {
