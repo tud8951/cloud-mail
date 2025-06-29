@@ -7,7 +7,6 @@ import r2Service from './r2-service';
 import emailService from './email-service';
 import accountService from './account-service';
 import userService from './user-service';
-import starService from './star-service';
 import constant from '../const/constant';
 import BizError from '../error/biz-error';
 
@@ -32,20 +31,20 @@ const settingService = {
 
 	async get(c) {
 		const settingRow = await this.query(c);
-		settingRow.secretKey = settingRow.secretKey ? `${settingRow.secretKey.slice(0, 12)}******`: null ;
+		settingRow.secretKey = settingRow.secretKey ? `${settingRow.secretKey.slice(0, 12)}******` : null;
 		Object.keys(settingRow.resendTokens).forEach(key => {
 			settingRow.resendTokens[key] = `${settingRow.resendTokens[key].slice(0, 12)}******`;
 		});
-		return settingRow
+		return settingRow;
 	},
 
 	async set(c, params) {
-		const settingData  = await this.query(c)
-		let resendTokens = {...settingData.resendTokens,...params.resendTokens}
+		const settingData = await this.query(c);
+		let resendTokens = { ...settingData.resendTokens, ...params.resendTokens };
 		Object.keys(resendTokens).forEach(domain => {
-			if(!resendTokens[domain]) delete resendTokens[domain]
-		})
-		params.resendTokens = JSON.stringify(resendTokens)
+			if (!resendTokens[domain]) delete resendTokens[domain];
+		});
+		params.resendTokens = JSON.stringify(resendTokens);
 		await orm(c).update(setting).set({ ...params }).returning().get();
 		await this.refresh(c);
 	},
@@ -109,6 +108,25 @@ const settingService = {
 		await emailService.physicsDeleteAll(c);
 		await accountService.physicsDeleteAll(c);
 		await userService.physicsDeleteAll(c);
+	},
+
+	async websiteConfig(c) {
+		const settingRow = await this.get(c);
+		return {
+			register: settingRow.register,
+			title: settingRow.title,
+			manyEmail: settingRow.manyEmail,
+			addEmail: settingRow.addEmail,
+			autoRefreshTime: settingRow.autoRefreshTime,
+			addEmailVerify: settingRow.addEmailVerify,
+			registerVerify: settingRow.registerVerify,
+			send: settingRow.send,
+			r2Domain: settingRow.r2Domain,
+			siteKey: settingRow.siteKey,
+			background: settingRow.background,
+			loginOpacity: settingRow.loginOpacity,
+			domainList:settingRow.domainList
+		};
 	}
 };
 

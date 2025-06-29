@@ -10,8 +10,8 @@ import app from '../hono/hono';
 const exclude = [
 	'/login',
 	'/register',
-	'/setting/query',
 	'/file',
+	'/setting/websiteConfig',
 	'/webhooks',
 	'/init'
 ];

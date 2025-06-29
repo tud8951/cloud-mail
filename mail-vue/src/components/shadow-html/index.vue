@@ -39,6 +39,8 @@ function updateContent() {
   const bodyStyleMatch = props.html.match(bodyStyleRegex);
   const bodyStyle = bodyStyleMatch ? bodyStyleMatch[1] : '';
 
+  console.log(bodyStyle)
+
   // 2. 移除 <body> 标签（保留内容）
   const cleanedHtml = props.html.replace(/<\/?body[^>]*>/gi, '');
 
@@ -63,22 +65,11 @@ function updateContent() {
         ${bodyStyle ? bodyStyle : ''} /* 注入 body 的 style */
       }
 
-      img {
+      img:not(table img) {
         max-width: 100%;
         height: auto !important;
       }
 
-      *:not(p) {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: inherit;
-        -webkit-tap-highlight-color: transparent;
-      }
-
-      a {
-        color: #409EFF !important;
-      }
     </style>
     <div class="shadow-content">
       ${cleanedHtml}

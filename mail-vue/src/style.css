@@ -72,13 +72,6 @@ button, input, select, textarea {
 }
 
 .tox .tox-dialog__body-content {
-    max-height: min(850px, calc(100vh - 110px)) !important;
-    @media (max-width: 1024px) {
-        max-height: min(850px, calc(100% - 40px)) !important;
-    }
-}
-
-.tox .tox-dialog__body-content {
     overflow: initial !important;
     max-height: min(850px, calc(100vh - 110px)) !important;
     @media (max-width: 1024px) {
@@ -87,7 +80,14 @@ button, input, select, textarea {
     }
 }
 
+.tox-dialog__body-content {
+    height: auto !important;
+    flex-basis: auto !important;
+}
 
+.tox .tox-collection--grid .tox-collection__group {
+    max-height: 220px !important;
+}
 
 :root {
     --el-color-primary: #1890ff;

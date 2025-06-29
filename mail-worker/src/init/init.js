@@ -12,8 +12,45 @@ const init = {
 		await this.intDB(c);
 		await this.v1_1DB(c);
 		await this.v1_2DB(c);
+		await this.v1_3DB(c);
 		await settingService.refresh(c);
 		return c.text('初始化成功');
+	},
+
+	async v1_3DB(c) {
+
+		const ADD_COLUMN_SQL_LIST = [
+			`ALTER TABLE setting ADD COLUMN tg_bot_token TEXT NOT NULL DEFAULT '';`,
+			`ALTER TABLE setting ADD COLUMN tg_chat_id TEXT NOT NULL DEFAULT '';`,
+			`ALTER TABLE setting ADD COLUMN tg_bot_status INTEGER NOT NULL DEFAULT 1;`,
+			`ALTER TABLE setting ADD COLUMN forward_email TEXT NOT NULL DEFAULT '';`,
+			`ALTER TABLE setting ADD COLUMN forward_status INTEGER TIME NOT NULL DEFAULT 1;`,
+			`ALTER TABLE setting ADD COLUMN rule_email TEXT NOT NULL DEFAULT '';`,
+			`ALTER TABLE setting ADD COLUMN rule_type INTEGER NOT NULL DEFAULT 0;`
+		];
+
+		for (let sql of ADD_COLUMN_SQL_LIST) {
+			try {
+				await c.env.db.prepare(sql).run();
+			} catch (e) {
+				console.warn(`跳过字段添加，原因：${e.message}`);
+			}
+		}
+
+		const nameColumn = await c.env.db.prepare(`SELECT * FROM pragma_table_info('email') WHERE name = 'to_email' limit 1`).first();
+
+		if (nameColumn) {
+			return
+		}
+
+		const queryList = []
+
+		queryList.push(c.env.db.prepare(`ALTER TABLE email ADD COLUMN to_email TEXT NOT NULL DEFAULT ''`));
+		queryList.push(c.env.db.prepare(`ALTER TABLE email ADD COLUMN to_name TEXT NOT NULL DEFAULT ''`));
+		queryList.push(c.env.db.prepare(`UPDATE email SET to_email = json_extract(recipient, '$[0].address'), to_name = json_extract(recipient, '$[0].name')`));
+
+		await c.env.db.batch(queryList);
+
 	},
 
 	async v1_2DB(c){

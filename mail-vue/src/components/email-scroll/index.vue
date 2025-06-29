@@ -91,6 +91,14 @@
                             height="20"/>
 
                     </el-tooltip>
+                    <el-tooltip v-if="item.status ===  7"
+                                effect="dark"
+                                content="无人收件"
+                    >
+                      <Icon icon="ic:round-mark-email-read" style="color:#FBBD08" width="20"
+                            height="20"/>
+
+                    </el-tooltip>
                   </div>
                   <div v-else></div>
                   <span class="name">
@@ -117,7 +125,7 @@
                       <span>
                         <Icon icon="mdi-light:email" width="20" height="20"/>
                       </span>
-                      <span>{{ item.accountEmail }}</span>
+                      <span>{{ item.toEmail }}</span>
                     </div>
                     <div class="del-status" v-if="item.isDel">
                       <el-tag type="info" size="small">已删除</el-tag>
@@ -259,6 +267,14 @@ watch(() => emailStore.deleteIds, () => {
   }
 })
 
+watch(() => emailStore.cancelStarEmailId, () => {
+  emailList.forEach(email => {
+    if (email.emailId === emailStore.cancelStarEmailId) {
+      email.isStar = 0
+    }
+  })
+})
+
 const accountShow = computed(() => {
   return uiStore.accountShow && settingStore.settings.manyEmail === 0
 })
@@ -288,7 +304,7 @@ function htmlToText(email) {
 
 function cleanSpace(text) {
   return text
-      .replace(/[\u200B-\u200F\uFEFF\u034F\u200B-\u200F\u00A0\u3000]/g, '')  // 移除零宽空格
+      .replace(/[\u200B-\u200F\uFEFF\u034F\u200B-\u200F\u00A0\u3000\u00AD]/g, '')// 移除零宽空格
       .replace(/\s+/g, ' ')                   // 多空白合并成一个空格
       .trim();
 }

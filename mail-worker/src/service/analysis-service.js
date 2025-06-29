@@ -1,7 +1,7 @@
 import analysisDao from '../dao/analysis-dao';
 import orm from '../entity/orm';
 import email from '../entity/email';
-import { desc, count, eq } from 'drizzle-orm';
+import { desc, count, eq, and, ne, isNotNull } from 'drizzle-orm';
 import { emailConst } from '../const/entity-const';
 import kvConst from '../const/kv-const';
 import dayjs from 'dayjs';
@@ -17,7 +17,6 @@ const analysisService = {
 		const [
 			numberCount,
 			nameRatio,
-			sendEmailRatio,
 			userDayCountRaw,
 			receiveDayCountRaw,
 			sendDayCountRaw,
@@ -28,18 +27,11 @@ const analysisService = {
 			orm(c)
 				.select({ name: email.name, total: count() })
 				.from(email)
-				.where(eq(email.type, emailConst.type.RECEIVE))
+				.where(and(eq(email.type, emailConst.type.RECEIVE), isNotNull(email.name), ne(email.name,'')))
 				.groupBy(email.name)
 				.orderBy(desc(count()))
 				.limit(6),
 
-			orm(c)
-				.select({ email: email.sendEmail, total: count() })
-				.from(email)
-				.where(eq(email.type, emailConst.type.RECEIVE))
-				.groupBy(email.sendEmail)
-				.orderBy(desc(count()))
-				.limit(6),
 
 			analysisDao.userDayCount(c),
 			analysisDao.receiveDayCount(c),
@@ -59,8 +51,7 @@ const analysisService = {
 			numberCount,
 			userDayCount,
 			receiveRatio: {
-				nameRatio,
-				sendEmailRatio
+				nameRatio
 			},
 			emailDayCount: {
 				receiveDayCount,

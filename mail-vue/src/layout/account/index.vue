@@ -7,8 +7,13 @@
     <el-scrollbar class="scrollbar">
       <div v-infinite-scroll="getAccountList" :infinite-scroll-distance="600"  :infinite-scroll-immediate="false">
         <el-card class="item" :class="itemBg(item.accountId)" v-for="item in accounts" :key="item.accountId" @click="changeAccount(item)">
-          <div class="account">
-            {{ item.email }}
+          <div class="account" @click.stop="copyAccount(item.email)">
+            <el-tooltip v-if="showCopyInfo" effect="dark" :hide-after="0" :show-after="800" placement="top" content="点击复制">
+              {{ item.email }}
+            </el-tooltip>
+            <template v-else >
+              {{ item.email }}
+            </template>
           </div>
           <div class="opt">
             <div class="send-email" @click.stop>
@@ -142,6 +147,7 @@ const addRef = ref({})
 let account = null
 let turnstileId = null
 let verifyToken = ''
+let showCopyInfo = window.innerWidth > 1024
 const addForm = reactive({
   email: '',
   suffix: settingStore.domainList[0]
@@ -262,6 +268,24 @@ function add() {
   setTimeout(() => {
     addRef.value.focus()
   },100)
+}
+
+async function copyAccount(account) {
+  try {
+    await navigator.clipboard.writeText(account);
+    ElMessage({
+      message: '复制成功',
+      type: 'success',
+      plain: true,
+    })
+  } catch (err) {
+    console.error('复制失败:', err);
+    ElMessage({
+      message: '复制失败',
+      type: 'error',
+      plain: true,
+    })
+  }
 }
 
 function getAccountList() {

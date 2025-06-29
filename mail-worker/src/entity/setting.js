@@ -13,7 +13,14 @@ export const setting = sqliteTable('setting', {
 	secretKey: text('secret_key'),
 	siteKey: text('site_key'),
 	background: text('background'),
-	loginOpacity: integer('login_opacity').default(0.9),
+	tgBotToken: text('tg_bot_token').default('').notNull(),
+	tgChatId: text('tg_chat_id').default('').notNull(),
+	tgBotStatus: integer('tg_bot_status').default(1).notNull(),
+	forwardEmail: text('forward_email').default('').notNull(),
+	forwardStatus: integer('forward_status').default(1).notNull(),
+	ruleEmail: text('rule_email').default('').notNull(),
+	ruleType: integer('rule_type').default(0).notNull(),
+	loginOpacity: integer('login_opacity').default(0.88),
 	resendTokens: text('resend_tokens').default("{}").notNull(),
 });
 export default setting

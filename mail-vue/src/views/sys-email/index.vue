@@ -27,10 +27,10 @@
                   placeholder="请选择"
                   class="select"
               >
-                <el-option key="1" label="用户" :value="'user'"/>
-                <el-option key="2" label="邮箱" :value="'account'"/>
                 <el-option key="3" label="发件人" :value="'name'"/>
                 <el-option key="4" label="主题" :value="'subject'"/>
+                <el-option key="1" label="用户" :value="'user'"/>
+                <el-option key="2" label="邮箱" :value="'account'"/>
               </el-select>
               <div style="color: #333;display: flex;">
                 <span>{{ selectTitle }}</span>
@@ -41,9 +41,10 @@
         </el-input>
         <el-select v-model="params.type" placeholder="Select" class="status-select">
           <el-option key="1" label="全部" value="all"/>
-          <el-option key="2" label="发件" value="send"/>
-          <el-option key="3" label="收件" value="receive"/>
-          <el-option key="4" label="删除" value="delete"/>
+          <el-option key="3" label="已接收" value="receive"/>
+          <el-option key="2" label="已发送" value="send"/>
+          <el-option key="4" label="已删除" value="delete"/>
+          <el-option key="4" label="无人收件" value="noone"/>
         </el-select>
         <Icon class="icon" icon="iconoir:search" @click="search" width="20" height="20"/>
         <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"
@@ -73,7 +74,7 @@ defineOptions({
 
 const emailStore = useEmailStore();
 const sysEmailScroll = ref({})
-const searchType = ref('user')
+const searchType = ref('name')
 const searchValue = ref('')
 const mySelect = ref()
 
@@ -191,7 +192,7 @@ function getEmailList(emailId, size) {
 
 .status-select {
   margin-bottom: 2px;
-  width: 80px;
+  width: 100px;
   :deep(.el-select__wrapper) {
     min-height: 28px;
   }

@@ -4,7 +4,7 @@ import router from './router';
 import './style.css';
 import VueCropper from 'vue-cropper';
 import 'vue-cropper/dist/index.css'
-import { init } from '@/utils/init.js';
+import { init } from '@/init/init.js';
 import { createPinia } from 'pinia';
 import piniaPersistedState from 'pinia-plugin-persistedstate';
 import perm from "@/directives/perm.js";

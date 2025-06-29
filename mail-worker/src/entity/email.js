@@ -12,6 +12,8 @@ export const email = sqliteTable('email', {
 	cc: text('cc').default('[]'),
 	bcc: text('bcc').default('[]'),
 	recipient: text('recipient'),
+	toEmail: text('to_email').default('').notNull(),
+	toName: text('to_name').default('').notNull(),
 	inReplyTo: text('in_reply_to').default(''),
 	relation: text('relation').default(''),
 	messageId: text('message_id').default(''),

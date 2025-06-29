@@ -107,8 +107,8 @@ function initEditor() {
             cursor: pointer;
         }
     }
-    table, th, td {
-      border: none !important;
+    .mce-item-table:not([border]), .mce-item-table:not([border]) caption, .mce-item-table:not([border]) td, .mce-item-table:not([border]) th, .mce-item-table[border="0"], .mce-item-table[border="0"] caption, .mce-item-table[border="0"] td, .mce-item-table[border="0"] th, table[style*="border-width: 0px"], table[style*="border-width: 0px"] caption, table[style*="border-width: 0px"] td, table[style*="border-width: 0px"] th {
+        border: none;
     }
     a {
         color: #409EFF !important;

@@ -4,7 +4,7 @@ import { useAccountStore } from "@/store/account.js";
 import { loginUserInfo } from "@/request/my.js";
 import { permsToRouter } from "@/utils/perm.js";
 import router from "@/router";
-import { settingQuery } from "@/request/setting.js";
+import { websiteConfig } from "@/request/setting.js";
 import {cvtR2Url} from "@/utils/convert.js";
 
 export async function init() {
@@ -24,7 +24,7 @@ export async function init() {
             return null;
         });
 
-        const [s, user] = await Promise.all([settingQuery(), userPromise]);
+        const [s, user] = await Promise.all([websiteConfig(), userPromise]);
         setting = s;
         settingStore.settings = setting;
         settingStore.domainList = setting.domainList;
@@ -41,7 +41,7 @@ export async function init() {
         }
 
     } else {
-        setting = await settingQuery();
+        setting = await websiteConfig();
         settingStore.settings = setting;
         settingStore.domainList = setting.domainList;
         document.title = setting.title;

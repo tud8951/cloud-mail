@@ -1,6 +1,6 @@
 <template>
-  <div class="send" v-show="show">
-    <div class="write-box">
+  <div class="send" v-show="show" @click="close">
+    <div class="write-box" @click.stop>
       <div class="title">
         <div class="title-left">
           <span class="title-text">

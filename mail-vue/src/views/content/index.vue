@@ -34,7 +34,8 @@
             <el-alert v-if="email.status === 5" :closable="false" title="邮件发送被延迟" class="email-msg" type="warning" show-icon />
           </div>
           <el-scrollbar class="htm-scrollbar" :class="email.attList.length === 0 ? 'bottom-distance' : ''">
-            <ShadowHtml :html="formatImage(email)" />
+            <ShadowHtml :html="formatImage(email.content)" v-if="email.content" />
+            <span v-else style="white-space: pre-wrap">{{email.text}}</span>
           </el-scrollbar>
           <div class="att" v-if="email.attList.length > 0">
             <div class="att-title">
@@ -111,8 +112,8 @@ function toMessage(message) {
   return  message ? JSON.parse(message).message : '';
 }
 
-function formatImage(email) {
-  let content = email.content || email.text || ''
+function formatImage(content) {
+  content = content ||  ''
   const domain = settingStore.settings.r2Domain;
   return content.replace('{{domain}}', domain + '/');
 }
